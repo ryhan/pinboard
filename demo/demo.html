@@ -18,15 +18,20 @@
   <!--<div id="pinboard" class="fixie">-->
   </div>
   <script>
+  $(function() {
+    console.log("creating pins");
     var pins = [];
     for (var i = 1; i< 20; i++){
       pins.push(new Pin({text: "hello world", photo: "photos/"+i+".jpg"}, {}));
     }
+    console.log("creating pinboard");
     var pinboard = new Pinboard(pins);
     $('body').append(pinboard.html);
 
+    console.log("updating pinboard");
     pinboard.update();
-
+    console.log("done updating");
+  });
 
     //fixie.init();
     //fixie.setImagePlaceholder('http://flickholdr.com/${w}/${h}/canon').init();

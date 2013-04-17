@@ -12,9 +12,11 @@ class Pinboard
 
   update: () ->
     @_fill()
+    $(window).resize () => @_fill()
     $.map @pins, (pin) => @html.append pin.html
 
   _fill: () ->
+    console.log "filling"
     #number_to_show = @pins.length
 
     # determine grid size, grid unit sizes, zoom count
@@ -25,6 +27,7 @@ class Pinboard
 
     # place pins
     @_allocate grid
+    console.log "done filling"
 
   #_determine_unit_size: (number_to_show) ->
   _determine_unit_size: () ->
@@ -85,50 +88,65 @@ class Pinboard
 
     allocated_units = 0
 
-    place = (pin) ->
+    place_single = (pin) ->
       if allocated_units >= columns*rows
+        # pin.html.css('opacity', '0')
         return false
-      if not pin.zoom
-        point = find_empty_spot()
-        if point.y < 0
-          pin.html.css('display', 'none')
-          return false
-        matrix[point.y][point.x] = 1
-        allocated_units += 1
-        pin.html.css({
-          'top': "#{point.y*grid.unit_height}px",
-          'left': "#{point.x*grid.unit_width}px"
-        })
-        return true
       if pin.zoom
-        point = find_empty_double()
-        if point.y < 0 or point.x < 0
-          pin.html.css({'opacity':'0'})
-          return false
-        matrix[point.y][point.x] = 1
-        matrix[point.y+1][point.x] = 1
-        matrix[point.y][point.x+1] = 1
-        matrix[point.y+1][point.x+1] = 1
-        allocated_units += 4
-        pin.html.css({
-          'top': "#{point.y*grid.unit_height}px",
-          'left': "#{point.x*grid.unit_width}px"
-        })
-        return true
+        return false
+      point = find_empty_spot()
+      if point.y < 0
+        pin.html.css('opacity', '0')
+        return false
+      matrix[point.y][point.x] = 1
+      allocated_units += 1
+      pin.html.css({
+        'opacity': '1',
+        'top': "#{point.y*grid.unit_height}px",
+        'left': "#{point.x*grid.unit_width}px"
+      })
+      return true
 
+    place_zoomed = (pin) ->
+      if allocated_units >= columns*rows or not pin.zoom
+        pin.html.css('opacity', '0')
+        return false
+      point = find_empty_double()
+      if point.y < 0
+        pin.html.css('opacity', '0')
+        return false
+      matrix[point.y][point.x] = 1
+      matrix[point.y+1][point.x] = 1
+      matrix[point.y][point.x+1] = 1
+      matrix[point.y+1][point.x+1] = 1
+      allocated_units += 4
+      pin.html.css({
+        'opacity': '1',
+        'top': "#{point.y*grid.unit_height}px",
+        'left': "#{point.x*grid.unit_width}px"
+      })
+      return true
+
+
+    last_point = {x:0, y: 0}
     find_empty_spot = () ->
-      for r in [0 .. rows-1]
-        for c in [0 .. columns-1]
+      for r in [last_point.y .. rows-1]
+        for c in [0.. columns-1]
           if not matrix[r][c]
+            last_point = {x:c, y: r}
             return {x:c, y: r}
       return {x: -1, y: -1}
 
     find_empty_double = () ->
+      skip = Math.floor(Math.random()*3)
       for r in [0 .. rows-2]
         for c in [0 .. columns-2]
-          if not matrix[r][c] and not matrix[r][c+1] and not matrix[r+1][c+1] and not matrix[r+1][c]
-            return {x:c, y: r}
+          if r*columns + c > skip
+            if not matrix[r][c] and not matrix[r][c+1] and not matrix[r+1][c+1] and not matrix[r+1][c]
+              last_row = r + 1
+              return {x:c, y: r}
       return {x: -1, y: -1}
 
-    $.map @pins, place
+    $.map @pins, place_zoomed
+    $.map @pins, place_single
 
