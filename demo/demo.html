@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <title> Pinboard </title>
+
+  <link rel="stylesheet" type="text/css" href="../pinboard.css">
+
+  <script src="jquery.js"></script>
+  <script src="underscore.js"></script>
+  <script src="fixie.js"></script>
+
+  <script src="../pinboard.js"></script>
+
+</head>
+<body>
+
+  <div id="pinboard" class="fixie">
+  </div>
+  <script>
+    var pins = [];
+    for (var i = 1; i< 10; i++){
+      var pin = new Pin({text: "hello world", photo: "photos/"+i+".jpg"}, {});
+      $('#pinboard').append(pin.html);
+      pins.push(pin);
+    }
+    //fixie.init();
+    //fixie.setImagePlaceholder('http://flickholdr.com/${w}/${h}/canon').init();
+  </script>
+</body>
+</html>
