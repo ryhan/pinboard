@@ -1,4 +1,4 @@
-#pinboard{
+.pinboard{
   position: fixed;
   top: 0;
   left: 0;
@@ -31,7 +31,7 @@
 
 .pin_container{
   position: absolute;
-  position: relative;
+  /*position: relative;*/
   width: 400px;
   height: 300px;
   top: 0;
@@ -66,7 +66,7 @@
 }
 
 .pin_text{
-  background: -webkit-linear-gradient(top, rgba(0,0,0,0.5), rgba(0,0,0,0.3), rgba(0,0,0,0));
+  background: -webkit-linear-gradient(top, rgba(0,0,0,0.8), rgba(0,0,0,0.7), rgba(0,0,0,0.3), rgba(0,0,0,0));
 
   position: absolute;
   top: 0;

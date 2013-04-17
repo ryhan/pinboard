@@ -9,20 +9,25 @@
   <script src="underscore.js"></script>
   <script src="fixie.js"></script>
 
+  <script src="../pin.js"></script>
   <script src="../pinboard.js"></script>
 
 </head>
 <body>
 
-  <div id="pinboard" class="fixie">
+  <!--<div id="pinboard" class="fixie">-->
   </div>
   <script>
     var pins = [];
-    for (var i = 1; i< 10; i++){
-      var pin = new Pin({text: "hello world", photo: "photos/"+i+".jpg"}, {});
-      $('#pinboard').append(pin.html);
-      pins.push(pin);
+    for (var i = 1; i< 20; i++){
+      pins.push(new Pin({text: "hello world", photo: "photos/"+i+".jpg"}, {}));
     }
+    var pinboard = new Pinboard(pins);
+    $('body').append(pinboard.html);
+
+    pinboard.update();
+
+
     //fixie.init();
     //fixie.setImagePlaceholder('http://flickholdr.com/${w}/${h}/canon').init();
   </script>
