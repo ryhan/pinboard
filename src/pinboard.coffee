@@ -37,39 +37,39 @@ class Pinboard
   # Figure out the relative placement and sizing of each pin
   fit_blocks: () ->
     @_create_empty_grid()
-    for pin in @pins
-      pin.zoom = false
-      pin.row = -1
-      pin.column = -1
-    
-    # Place a pin a picked location
-    place = (pin, picked) =>
-      @_fill_block picked.row, picked.column, size
-      pin.row = picked.row
-      pin.column = picked.column
-
-    # Pick and handle zoomed pins
-    size = 2
+    @_clear_pin_values()
     @pins = _.shuffle @pins
-    for i in [0 .. ZOOM_COUNT]
-      pin = @pins[i]
-      pin.zoom = true
-      options = @_find_empty_blocks size
-      unless options.length < 1
-        place pin, options[Math.floor(Math.random()*options.length)]
-
-    # handle remaining pins
-    size = 1
-    options = @_find_empty_blocks size
-    for pin in @pins
-      unless pin.zoom or options.length < 1
-        place pin, options.shift()
+    @_fit_zoomed()
+    @_fit_remaining()
 
   # Apply css to pins to set height, width, and position
   lay_blocks: () =>
     for pin in @pins
       @_set_zoom_css pin
       @_set_position_css pin
+
+  # Pick and handle zoomed pins
+  _fit_zoomed: () ->
+    @size = 2
+    for pin in @pins.slice 0, ZOOM_COUNT
+      pin.zoom = true
+      options = @_find_empty_blocks()
+      unless options.length < 1
+        @_place pin, options[Math.floor(Math.random()*options.length)]
+
+  # handle remaining pins
+  _fit_remaining: () ->
+    @size = 1
+    options = @_find_empty_blocks()
+    for pin in @pins
+      unless pin.zoom or options.length < 1
+        @_place pin, options.shift()
+
+  # Place a pin a picked location
+  _place : (pin, picked) =>
+    @_fill_block picked.row, picked.column
+    pin.row = picked.row
+    pin.column = picked.column
 
   # Sets height + width
   _set_zoom_css: (pin) ->
@@ -98,26 +98,30 @@ class Pinboard
         row.push 0
       @grid.push row
 
+  _clear_pin_values: () ->
+    for pin in @pins
+      pin.zoom = false
+      pin.row = -1
+      pin.column = -1
+
   # Records that a pin of [size] was placed at @grid[row, column]
-  _fill_block: (row, column, size) ->
-    for r in [0 .. size - 1]
-      for c in [0 .. size - 1]
+  _fill_block: (row, column) ->
+    for r in [0 .. @size - 1]
+      for c in [0 .. @size - 1]
         @grid[row + r][column + c] = 1
 
-  # finds empty blocks in [grid] of [size]
-  _find_empty_blocks: (size) ->
-    return false if size < 0
-    options = [ ]
-
-    # Returns true if block at grid[r][c] of [size] is empty
-    isEmpty = (r, c) =>
-      for y in [0 .. size - 1]
-        for x in [0 .. size - 1]
-          return false if @grid[r+y][c+x]
+  # Returns true if block at grid[r][c] of [size] is empty
+  _is_empty: (row, column) =>
+      for y in [0 .. @size - 1]
+        for x in [0 .. @size - 1]
+          return false if @grid[row+y][column+x]
       return true
 
-    for row in [0 .. @y_count - size]
-      for column in [0 .. @x_count - size]
-        options.push {row, column} if isEmpty(row, column)
-
+  # finds empty blocks in [grid] of [size]
+  _find_empty_blocks: =>
+    return false if @size < 0
+    options = [ ]
+    for row in [0 .. @y_count - @size]
+      for column in [0 .. @x_count - @size]
+        options.push {row, column} if @_is_empty row, column
     return options
