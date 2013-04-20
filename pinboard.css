@@ -37,6 +37,8 @@ body{
   height: 300px;
   top: 0;
   left: 0;
+
+  -webkit-transition: top 0.2 ease-in-out, left 0.2 ease-in-out;
 }
 
 .pin_container:nth-child(4){
