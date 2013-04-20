@@ -36,11 +36,37 @@ class Pinboard
 
   # Figure out the relative placement and sizing of each pin
   fit_blocks: () ->
-    @_create_empty_grid()
+    @grid = new PinboardGrid @y_count, @x_count
     @_clear_pin_values()
     @pins = _.shuffle @pins
     @_fit_zoomed()
     @_fit_remaining()
+
+  _clear_pin_values: () ->
+    for pin in @pins
+      pin.zoom = false
+      pin.row = -1
+      pin.column = -1
+      
+  _fit_zoomed: () ->
+    @size = 2
+    for pin in @pins.slice 0, ZOOM_COUNT
+      pin.zoom = true
+      options = @grid.find @size
+      unless options.length < 1
+        @_place pin, options[Math.floor(Math.random()*options.length)]
+
+  _fit_remaining: () ->
+    @size = 1
+    options = @grid.find @size
+    for pin in @pins
+      unless pin.zoom or options.length < 1
+        @_place pin, options.shift()
+
+  _place : (pin, picked) =>
+    @grid.place picked.row, picked.column, @size
+    pin.row = picked.row
+    pin.column = picked.column
 
   # Apply css to pins to set height, width, and position
   lay_blocks: () =>
@@ -48,30 +74,6 @@ class Pinboard
       @_set_zoom_css pin
       @_set_position_css pin
 
-  # Pick and handle zoomed pins
-  _fit_zoomed: () ->
-    @size = 2
-    for pin in @pins.slice 0, ZOOM_COUNT
-      pin.zoom = true
-      options = @_find_empty_blocks()
-      unless options.length < 1
-        @_place pin, options[Math.floor(Math.random()*options.length)]
-
-  # handle remaining pins
-  _fit_remaining: () ->
-    @size = 1
-    options = @_find_empty_blocks()
-    for pin in @pins
-      unless pin.zoom or options.length < 1
-        @_place pin, options.shift()
-
-  # Place a pin a picked location
-  _place : (pin, picked) =>
-    @_fill_block picked.row, picked.column
-    pin.row = picked.row
-    pin.column = picked.column
-
-  # Sets height + width
   _set_zoom_css: (pin) ->
     if pin.zoom
       height = 2*@y_unit + "px"
@@ -81,7 +83,6 @@ class Pinboard
       width = @x_unit + "px"
     pin.html.css {height, width}
 
-  # Sets position (top, left)
   _set_position_css: (pin) ->
     opacity = 1
     opacity = 0 if pin.row < 0 or pin.column < 0
@@ -89,39 +90,40 @@ class Pinboard
     left = pin.column*@x_unit + "px"
     pin.html.css {opacity, top, left}
 
-  # Sets @grid to be an empty matrix of size @x_count by @y_count
-  _create_empty_grid: () ->
-    @grid = [ ]
-    for r in [1 .. @y_count]
-      row = [ ]
-      for c in [1 .. @x_count]
-        row.push 0
-      @grid.push row
+# Structure to keep track of where we've allocated pins
+class PinboardGrid
 
-  _clear_pin_values: () ->
-    for pin in @pins
-      pin.zoom = false
-      pin.row = -1
-      pin.column = -1
+  constructor: (rows, columns) ->
+    @rows = rows
+    @columns = columns
+    @clear_matrix()
+
+  clear_matrix: () ->
+    @matrix = [ ]
+    for r in [1 .. @rows]
+      row = [ ]
+      for c in [1 .. @columns]
+        row.push 0
+      @matrix.push row
 
   # Records that a pin of [size] was placed at @grid[row, column]
-  _fill_block: (row, column) ->
-    for r in [0 .. @size - 1]
-      for c in [0 .. @size - 1]
-        @grid[row + r][column + c] = 1
-
-  # Returns true if block at grid[r][c] of [size] is empty
-  _is_empty: (row, column) =>
-      for y in [0 .. @size - 1]
-        for x in [0 .. @size - 1]
-          return false if @grid[row+y][column+x]
-      return true
+  place: (row, column, size) ->
+    for r in [0 .. size - 1]
+      for c in [0 .. size - 1]
+        @matrix[row + r][column + c] = 1
 
   # finds empty blocks in [grid] of [size]
-  _find_empty_blocks: =>
-    return false if @size < 0
+  find: (size) =>
+    return false if size < 0
     options = [ ]
-    for row in [0 .. @y_count - @size]
-      for column in [0 .. @x_count - @size]
-        options.push {row, column} if @_is_empty row, column
+    for row in [0 .. @rows - size]
+      for column in [0 .. @columns - size]
+        options.push {row, column} if @_is_empty row, column, size
     return options
+
+  # Returns true if block at grid[r][c] of [size] is empty
+  _is_empty: (row, column, size) =>
+      for y in [0 .. @size - 1]
+        for x in [0 .. @size - 1]
+          return false if @matrix[row+y][column+x]
+      return true
