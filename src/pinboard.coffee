@@ -47,7 +47,7 @@ class Pinboard
       pin.zoom = false
       pin.row = -1
       pin.column = -1
-      
+
   _fit_zoomed: () ->
     @size = 2
     for pin in @pins.slice 0, ZOOM_COUNT
@@ -123,7 +123,7 @@ class PinboardGrid
 
   # Returns true if block at grid[r][c] of [size] is empty
   _is_empty: (row, column, size) =>
-      for y in [0 .. @size - 1]
-        for x in [0 .. @size - 1]
+      for y in [0 .. size - 1]
+        for x in [0 .. size - 1]
           return false if @matrix[row+y][column+x]
       return true
