@@ -1,10 +1,13 @@
+body{
+  background-color: black;
+}
+
 .pinboard{
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-
   box-sizing: border-box;
   -moz-box-sizing:border-box;
 
@@ -23,8 +26,6 @@
   margin: 0;
   overflow: hidden;
   vertical-align: text-top;
-
-  -webkit-transition: all 0.2s;
 }
 
 /* pin */
@@ -60,12 +61,11 @@
   -moz-background-size: cover;
   -o-background-size: cover;
   background-size: cover;
-
-  /*-webkit-filter: blur(4px);*/
   overflow: hidden;
 }
 
 .pin_text{
+  opacity: 0;
   background: -webkit-linear-gradient(top, rgba(0,0,0,0.8), rgba(0,0,0,0.7), rgba(0,0,0,0.3), rgba(0,0,0,0));
 
   position: absolute;
@@ -73,14 +73,12 @@
   left: 0;
   width: 100%;
   height: 100%;
-
   padding: 30px;
 
   font-family: Helvetica, Arial, sans-serif;
   font-size: 30px;
   line-height: 36px;
   font-weight: 200;
-
   color: rgba(255,255, 255, 0.8);
   text-shadow: 0 1px black, 0 -1px black, 1px 0 black, -1px 0 black;
 }

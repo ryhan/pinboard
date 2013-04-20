@@ -3,150 +3,114 @@
 class Pinboard
 
   MIN_WIDTH = 300
-  MIN_HEIGHT = 200
-  MIN_NUM_ZOOM = 2
-
+  MIN_HEIGHT = 250
+  ZOOM_COUNT = 2
+  
   constructor: (pins) ->
     @pins = pins
     @html = $ "<div class='pinboard' />"
-
-  update: () ->
-    @_fill()
-    $(window).resize () => @_fill()
+    @set_grid_size()
     $.map @pins, (pin) => @html.append pin.html
 
-  _fill: () ->
-    console.log "filling"
-    #number_to_show = @pins.length
+  update: () ->
+    old_x = @x_count
+    old_y = @y_count
+    @set_grid_size()
+    @fit_blocks() if old_x != @x_count or old_y != @y_count
+    @lay_blocks()
+    $(window).resize () => @update()
 
-    # determine grid size, grid unit sizes, zoom count
-    grid = @_determine_unit_size() # number_to_show
-
-    # adjust css of pins to fit grid
-    @_adjust_pin_sizes grid
-
-    # place pins
-    @_allocate grid
-    console.log "done filling"
-
-  #_determine_unit_size: (number_to_show) ->
-  _determine_unit_size: () ->
-
-
-    number_to_zoom = MIN_NUM_ZOOM
-    #
-    #while (number_to_show - 3*number_to_zoom)%4 != 0
-    #  number_to_zoom += 1
-
-    #unit_fill_count = number_to_show - 3*number_to_zoom
-
+  # Find the base unit sizes for container divs
+  set_grid_size: () ->
     width = @html.width()
     height = @html.height()
+    @x_count = Math.floor width / MIN_WIDTH
+    @y_count = Math.floor height / MIN_HEIGHT
+    @x_unit = parseInt width / @x_count
+    @y_unit = parseInt height / @y_count
+    console.log {@x_count, @y_count, @x_unit, @y_unit}
 
-    unit_horiz_count = Math.floor(width / MIN_WIDTH)
-    unit_vert_count = Math.floor(height / MIN_HEIGHT)
+  fit_blocks: () ->
+    @_create_empty_grid()
+    for pin in @pins
+      pin.zoom = false
+      pin.row = -1
+      pin.column = -1
+    
+    set = (picked, pin) =>
+      @_fill_block picked.row, picked.column, size
+      pin.row = picked.row
+      pin.column = picked.column
 
-    unit_width = parseInt(width/unit_horiz_count)
-    unit_height = parseInt(height / unit_vert_count)
+    # Pick and handle zoomed pins
+    size = 2
+    @pins = _.shuffle @pins
+    for i in [0 .. ZOOM_COUNT]
+      pin = @pins[i]
+      pin.zoom = true
+      options = @_find_empty_blocks size
+      unless options.length < 1
+        picked = options[Math.floor(Math.random()*options.length)]
+        set picked, pin
 
-    {
-      number_to_zoom, 
-      unit_width, unit_height, 
-      unit_horiz_count, unit_vert_count, 
-      width, height
-    }
+    # handle remaining pins
+    size = 1
+    options = @_find_empty_blocks size
+    for pin in @pins
+      unless pin.zoom or options.length < 1
+        picked = options.shift()
+        set picked, pin
 
-  _adjust_pin_sizes: (grid)->
-    @pins = _.shuffle(@pins)
-    $.map @pins, (pin, i) => 
-      if i< grid.number_to_zoom
-        pin.zoom = true
-        pin.html.css({
-          'height': "#{2*grid.unit_height}px",
-          'width': "#{2*grid.unit_width}px"
-        })
-      else
-        pin.zoom = false
-        pin.html.css({
-          'height': "#{grid.unit_height}px",
-          'width': "#{grid.unit_width}px"
-        })
-    @pins = _.shuffle(@pins)
+  # Apply css to pins to set height, width, and position
+  lay_blocks: () =>
+    for pin in @pins
+      @_set_zoom_css pin
+      @_set_position_css pin
 
-  _allocate: (grid) ->
-    #matrix = $.map(new Array(grid.unit_horiz_count*grid.unit_vert_count), () -> 0)
+  _set_zoom_css: (pin) ->
+    if pin.zoom
+      height = 2*@y_unit + "px"
+      width = 2*@x_unit + "px"
+    else
+      height = @y_unit + "px"
+      width = @x_unit + "px"
+    pin.html.css {height, width}
 
-    columns = grid.unit_horiz_count
-    rows = grid.unit_vert_count
+  _set_position_css: (pin) ->
+    opacity = 1
+    opacity = 0 if pin.row < 0 or pin.column < 0
+    top = pin.row*@y_unit + "px"
+    left = pin.column*@x_unit + "px"
+    pin.html.css {opacity, top, left}
 
-    matrix = [ ]
-    for r in [1 .. rows]
+  _create_empty_grid: () ->
+    @grid = [ ]
+    for r in [1 .. @y_count]
       row = [ ]
-      for c in [1 .. columns]
+      for c in [1 .. @x_count]
         row.push 0
-      matrix.push row
+      @grid.push row
 
-    allocated_units = 0
+  _fill_block: (row, column, size) ->
+    for r in [0 .. size - 1]
+      for c in [0 .. size - 1]
+        @grid[row + r][column + c] = 1
 
-    place_single = (pin) ->
-      if allocated_units >= columns*rows
-        # pin.html.css('opacity', '0')
-        return false
-      if pin.zoom
-        return false
-      point = find_empty_spot()
-      if point.y < 0
-        pin.html.css('opacity', '0')
-        return false
-      matrix[point.y][point.x] = 1
-      allocated_units += 1
-      pin.html.css({
-        'opacity': '1',
-        'top': "#{point.y*grid.unit_height}px",
-        'left': "#{point.x*grid.unit_width}px"
-      })
+  # finds empty blocks in [grid] of [size]
+  _find_empty_blocks: (size) ->
+    return false if size < 0
+
+    options = [ ]
+
+    # Returns true if block at grid[r][c] of [size] is empty
+    isEmpty = (r, c) =>
+      for y in [0 .. size - 1]
+        for x in [0 .. size - 1]
+          return false if @grid[r+y][c+x]
       return true
 
-    place_zoomed = (pin) ->
-      if allocated_units >= columns*rows or not pin.zoom
-        pin.html.css('opacity', '0')
-        return false
-      point = find_empty_double()
-      if point.y < 0
-        pin.html.css('opacity', '0')
-        return false
-      matrix[point.y][point.x] = 1
-      matrix[point.y+1][point.x] = 1
-      matrix[point.y][point.x+1] = 1
-      matrix[point.y+1][point.x+1] = 1
-      allocated_units += 4
-      pin.html.css({
-        'opacity': '1',
-        'top': "#{point.y*grid.unit_height}px",
-        'left': "#{point.x*grid.unit_width}px"
-      })
-      return true
+    for row in [0 .. @y_count - size]
+      for column in [0 .. @x_count - size]
+        options.push {row, column} if isEmpty(row, column)
 
-
-    last_point = {x:0, y: 0}
-    find_empty_spot = () ->
-      for r in [last_point.y .. rows-1]
-        for c in [0.. columns-1]
-          if not matrix[r][c]
-            last_point = {x:c, y: r}
-            return {x:c, y: r}
-      return {x: -1, y: -1}
-
-    find_empty_double = () ->
-      skip = Math.floor(Math.random()*3)
-      for r in [0 .. rows-2]
-        for c in [0 .. columns-2]
-          if r*columns + c > skip
-            if not matrix[r][c] and not matrix[r][c+1] and not matrix[r+1][c+1] and not matrix[r+1][c]
-              last_row = r + 1
-              return {x:c, y: r}
-      return {x: -1, y: -1}
-
-    $.map @pins, place_zoomed
-    $.map @pins, place_single
-
+    return options
